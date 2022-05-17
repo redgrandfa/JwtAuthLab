@@ -247,14 +247,9 @@ public class TokenController : ControllerBase
 
 #### 1-1-3 前端呼叫API
 
-//QQ
 wwwroot/js 中新增Login.js檔，
 
-
-_Layout.cshtml中 的head區段中引入cookie套件
-```html
-```
-在_Layout.cshtml中，<body>區段的尾處引入Login.js 
+在_Layout.cshtml中，引入cookie套件、引入Login.js 
 ```html
 <script src="~/js/site.js" asp-append-version="true"></script>
 <script src="https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js"></script>
@@ -294,9 +289,12 @@ function signIn() {
 
 將JWT字串複製，到 [jwt.io網站](https://jwt.io/) 貼上觀察，可見header、payload都可以逆運算出來
 
-![image]()
+![image](https://github.com/redgrandfa/JwtAuthLab/blob/main/jwt.png?raw=true)
 
-*VERIFY SIGNATURE*區塊中輸入SignKey(appsettings.json中的)，再重貼一次JWT即可驗證Signature
+
+
+***VERIFY SIGNATURE***區塊中輸入SignKey(appsettings.json中)後，再重貼一次JWT即可驗證Signature
+
 
 
 註：如果想更了解產生JWT的細節，可以中斷點停在GenerateJWT方法return前，觀察**securityToken**這個物件中的屬性，比如：
