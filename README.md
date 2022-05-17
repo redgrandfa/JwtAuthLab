@@ -28,12 +28,10 @@ JSON Web Token(縮寫JWT)，顧名思義和**JSON字串**有關；是現在流�
 
 假設我用 `密(s)`表示將s加密，那JWT可想像成某三段文字用`.`隔開：
 
-`密(header).密(payload).密(signature)`
+```密(header).密(payload).密(signature)```
 
 
-而其中signature 是`密(header)`、`密(payload)`、`私鑰` 三者混成
-
-signature其實是由header、payload、私鑰混成的，所以比對可判斷header、payload有沒有被竄改過
+而其中signature 是`密(header)`、`密(payload)`、`私鑰` 三者混成的，所以比對可判斷header、payload有沒有被竄改過
 
 
 詳細可參考這篇文章
@@ -631,12 +629,9 @@ public IActionResult SignIn(LoginVM request)
 
     可以寫個背景排程來定期清理黑名單；清理的判斷依據可以是用戶最後一次登入的時間+兩週，因為JWT已經超過發行時規定的有效期間，沒必要再提防了。
 
----
 
 
-
-
-### 三個token可能實用的API
+### 1-5 三個token可能實用的API
 
 在TokenController裡加入以下程式碼，分別是：
 1. 取得所有**Claims**
@@ -667,6 +662,7 @@ public IActionResult GetJti()
 ```
 (這三個API待會可配合swagger的路由教學。)
 
+---
 ## 2 Swagger
 參考資料：
 > [(微軟文件)Swashbuckle 與 ASP.NET Core 使用者入門](https://docs.microsoft.com/zh-tw/aspnet/core/tutorials/getting-started-with-swashbuckle?view=aspnetcore-5.0&tabs=visual-studio#xml-comments)
@@ -765,7 +761,7 @@ public IActionResult GetSub(){...}
 public IActionResult GetJti(){...}
 ```
 
-執行專案，在swagger就可以直接看見端點。
+執行專案，在swagger就可以一次看見所有端點。
 整理一下效果：
 ```csharp
 [HttpGet("claims")] 
@@ -791,8 +787,8 @@ public IActionResult GetJti(){...}
 
 這很合理，畢竟沒攜帶JWT。所以再來要讓Swagger支援JWT機制
 
----
-## 2-2 讓Swagger支援JWT
+
+### 2-2 讓Swagger支援JWT
 
 參考這篇文章：
 > [使用 Swashbuckle 請求時加入 【JWT】](https://clarklin.gitlab.io/2021/06/13/asp-dotnet-core-api-document-using-jwt/)
@@ -856,7 +852,7 @@ services.AddSwaggerGen(c =>
 </PropertyGroup>
 ```
 
-#### 2-3-2 設定 Swagger 以使用所產生的 XML 檔案
+### 2-3-2 設定 Swagger 以使用所產生的 XML 檔案
 
 ```csharp
 services.AddSwaggerGen(c =>
