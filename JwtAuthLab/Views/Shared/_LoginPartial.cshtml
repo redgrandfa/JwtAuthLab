@@ -1,0 +1,19 @@
+﻿@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor;
+@{
+    //這兩個都無法確認是否登入中
+    //bool a = User.Identity.IsAuthenticated;
+    //bool b = HttpContextAccessor.HttpContext.User.Identity.IsAuthenticated;
+
+    bool isAuthenticated = HttpContextAccessor.HttpContext.Request.Cookies.ContainsKey("JWT");
+}
+
+@if (isAuthenticated)
+{
+    <button id="sign-out" onclick="signOut()">登出</button>
+}
+else
+{
+    <label>帳號</label>
+    <input id="username" value="XX" />
+    <button id="sign-in" onclick="signIn()">登入</button>
+}
