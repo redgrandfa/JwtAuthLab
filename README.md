@@ -6,7 +6,7 @@
 [教cookie驗證的教學Lab](https://github.com/redgrandfa/CookieAuthenticationLab)。
 由於cookie受同源政策影響，所以在前後端分離架構下，不適用cookie驗證；而token驗證可以填補這個需求。
 
-token可中譯成**令牌/權杖**，這機制的理念，可想像成是：
+token可中譯成**令牌/權杖**，token based驗證的理念，可想像成是：
 1. 皇帝**發行**了令牌
 2. 昭告各關卡/城門守衛，如何**檢驗**令牌真偽
 3. 任何**攜帶**令牌的人，可以通行。
@@ -26,7 +26,7 @@ JSON Web Token(縮寫JWT)，顧名思義和**JSON字串**有關；是現在流�
 3. signature
     簽章，檢驗真偽用
 
-假設我用 `密(s)`表示將s加密，那JWT可想像成某三段文字用`.`隔開：
+實際組成的長相：假設我用 `密(s)`表示將s加密，那JWT長得像某三段文字用`.`隔開：
 
 ```密(header).密(payload).密(signature)```
 
