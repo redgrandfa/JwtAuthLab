@@ -105,7 +105,10 @@ namespace JwtAuthLab
 
                 c.AddSecurityRequirement(new OpenApiSecurityRequirement()
                 {
-                    { new OpenApiSecurityScheme(){ }, new List<string>() }
+                    { 
+                        new OpenApiSecurityScheme(){ }, 
+                        new List<string>() 
+                    }
                 });
 
                 c.AddSecurityRequirement(new OpenApiSecurityRequirement

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using static JwtAuthLab.Helpers.JwtHelper;
 
 namespace JwtAuthLab.ApiControllers
 {
@@ -53,8 +54,18 @@ namespace JwtAuthLab.ApiControllers
         //但因為未攜帶JWT，故無妨
         public ActionResult<string> SignIn(LoginVM request)
         {
-            BlackFilter._bannedList.Remove(request.Username);
-            return Ok(_jwtHelper.GenerateJWT(request.Username));
+            //先以登入輸入值到DB查到會員，這邊假的demo用
+            Member member = new Member
+            {
+                MemberId = 1,
+                Username = request.Username,
+            };
+
+            var jwt = _jwtHelper.GenerateJWT(member);
+
+            BlackFilter._bannedList.Remove(member.MemberId); //移除黑名單
+
+            return Ok(jwt);
         }
 
         //僅為了demo方便，將類別放在此
@@ -64,14 +75,14 @@ namespace JwtAuthLab.ApiControllers
             public string Password { get; set; }
         }
 
+
         [HttpGet]
         public IActionResult SignOut()
         {
-            var name = User.Claims
-                .FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+            var memberId = int.Parse(User.Identity.Name);
 
-            BlackFilter._bannedList.Add(name);
-            return Ok($"登出了{name}，加進過濾名單");
+            BlackFilter._bannedList.Add(memberId);
+            return Ok($"登出了{memberId}，加進過濾黑名單");
         }
 
         [HttpGet]
@@ -79,7 +90,7 @@ namespace JwtAuthLab.ApiControllers
         {
             return Ok($"驗證類型：{User.Identity.AuthenticationType}\n" +
                         $"通驗否：{User.Identity.IsAuthenticated}\n" +
-                        $"你是 {User.Identity.Name}"
+                        $"你ID是 {User.Identity.Name}"
                     );
         }
 

@@ -16,14 +16,21 @@ namespace JwtAuthLab.Helpers
         {
             this.configuration = configuration;
         }
-        public string GenerateJWT(string username)
+
+        //模擬DB中的Member資料。僅為了demo方便，將類別放在此
+        public class Member
         {
+            public int MemberId { get; set; }
+            public string Username { get; set; }
+        }
+
+        public string GenerateJWT(Member member)
+        {   
             //(一)造ClaimsIdentity
             //實際應到資料庫查此username資料，看該有哪些claim
             //以下此僅demo
             var claims = new List<Claim>();
-
-            claims.Add(new Claim(ClaimTypes.Name, username));
+            claims.Add(new Claim(ClaimTypes.Name, member.MemberId.ToString()));
 
             //RFC 7519 規格書 第四章 定義了七個Registered Claim Names
             //Iss   Issuer          發行者
@@ -45,7 +52,7 @@ namespace JwtAuthLab.Helpers
             //claims.Add(new Claim(JwtRegisteredClaimNames.Jti, "在claim設定的"));  //有效
 
             //結論：cliam這邊只需設定 Sub 和 Jti 這兩個
-            claims.Add(new Claim(JwtRegisteredClaimNames.Sub, username));
+            claims.Add(new Claim(JwtRegisteredClaimNames.Sub, member.Username));
             claims.Add(new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()));
             //註：有兩種命名空間可選，根據參考文章是選using System.IdentityModel.Tokens.Jwt;
             //    (這個命名空間含在 Nuget套件Authentication.JwtBearer 之中的)

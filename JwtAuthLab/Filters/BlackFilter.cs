@@ -8,14 +8,13 @@ namespace JwtAuthLab.Filters
 {
     public class BlackFilter : IAuthorizationFilter
     {
-        public static List<string> _bannedList = new List<string>()
-            { "bad", "dad" }; //可預先加些資料，測試filter的效果
+        public static List<int> _bannedList = new List<int>()
+            { 1,2 }; //可預先加些資料，測試filter的效果
         public void OnAuthorization(AuthorizationFilterContext context)
         {
-            var name = context.HttpContext.User.Claims
-                .FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
-
-            if (_bannedList.Contains(name))
+            var memberId = int.Parse(context.HttpContext.User.Identity.Name);
+                
+            if (_bannedList.Contains(memberId))
                 context.Result = new ForbidResult();
         }
     }

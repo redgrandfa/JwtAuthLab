@@ -82,14 +82,20 @@ JSON Web Token(縮寫JWT)，顧名思義和**JSON字串**有關；是現在流�
 ```csharp
 public class JwtHelper
 {
-    public string GenerateJWT(string username)
+    //模擬DB中的Member資料。僅為了demo方便，將類別放在此
+    public class Member
+    {
+        public int MemberId { get; set; }
+        public string Username { get; set; }
+    }
+
+    public string GenerateJWT(Member member)
     {
         //(一)造ClaimsIdentity
         //實際應到資料庫查此username資料，看該有哪些claim
         //以下此僅demo
         var claims = new List<Claim>();
-
-        claims.Add(new Claim(ClaimTypes.Name, username));
+        claims.Add(new Claim(ClaimTypes.Name, member.MemberId.ToString()));
 
         //RFC 7519 規格書 第四章 定義了七個Registered Claim Names
         //Iss   Issuer  發行者
@@ -111,7 +117,7 @@ public class JwtHelper
         //claims.Add(new Claim(JwtRegisteredClaimNames.Jti, "在claim設定的"));  //有效
 
         //結論：cliam這邊只需設定 Sub 和 Jti 這兩個
-        claims.Add(new Claim(JwtRegisteredClaimNames.Sub, username));
+        claims.Add(new Claim(JwtRegisteredClaimNames.Sub, member.Username));
         claims.Add(new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()));
         //註：有兩種命名空間可選，根據參考文章是選using System.IdentityModel.Tokens.Jwt;
         //    (這個命名空間含在 Nuget套件Authentication.JwtBearer 之中的)
@@ -144,15 +150,12 @@ public class JwtHelper
     {
         this.configuration = configuration;
     }
-
-    public string GenerateJWT(string username){
-        // ...
-    }
+    ...
 }
 ```
 GenerateJWT方法，做出tokenDescriptor物件後產生JWT：
 ```csharp
-public string GenerateJWT(string username)
+public string GenerateJWT(Member member)
 {
     //...方才寫到這
     var userClaimsIdentity = new ClaimsIdentity(claims);
@@ -212,7 +215,7 @@ public void ConfigureServices(IServiceCollection services)
 ```
 
 #### 1-1-2 後端API
-專案新增一個資料夾ApiControllers，其內心曾一個API控制器，命名為TokenController
+專案新增一個資料夾ApiControllers，其內新增一個API控制器，命名為TokenController
 1. 將Route規則更改
 2. 建構式注入JwtHelper
 3. 新增action命名為SignIn，並新增LoginVM這個類別以接收參數
@@ -233,7 +236,16 @@ public class TokenController : ControllerBase
     [HttpPost]
     public IActionResult SignIn(LoginVM request)
     {
-        return Ok( _jwtHelper.GenerateJWT(request.Username) );
+        //先以登入輸入值到DB查到會員，這邊假的demo用
+        Member member = new Member
+        {
+            MemberId = 1,
+            Username = request.Username,
+        };
+
+        var jwt = _jwtHelper.GenerateJWT(member) 
+
+        return Ok( jwt );
     }
 
     //僅為了demo方便將類別放在此
@@ -380,7 +392,7 @@ public class TokenController : ControllerBase
     {
         return Ok($"驗證類型：{User.Identity.AuthenticationType}\n" +
                     $"通驗否：{User.Identity.IsAuthenticated}\n" +
-                    $"你是 {User.Identity.Name}"
+                    $"你ID是 {User.Identity.Name}"
                 );
     }
 }
@@ -402,7 +414,7 @@ public class TokenController : ControllerBase
 
 @section Scripts{
     <script>
-        document.querySelector('authApi').onclick = ()=>{
+        document.querySelector('#authApi').onclick = ()=>{
             fetch('api/Token/TestAuth' , {
                 headers:{
                     Authorization: `Bearer ${Cookies.get(jwtNameInCookie)}`
@@ -450,7 +462,7 @@ else
 
 ```
 
-由於有用到`IHttpContextAccessor`，須在startup.cs檔的ConfigureServices方法中註冊相依性：
+由於有注入`IHttpContextAccessor`，須在startup.cs檔的ConfigureServices方法中註冊相依性：
 
 ```csharp
 services.AddScoped<JwtHelper>();
@@ -514,7 +526,7 @@ function refreshLoginPartial() {
         })
 }
 ```
-而`refreshLoginPartial`方法中拜訪的API，須到HomeController中補個action如下：
+而`refreshLoginPartial`方法中fetch拜訪的路徑，須到HomeController中補個action如下：
 ```csharp
 //再次渲染LoginPartial用
 public IActionResult LoginPartial()
@@ -543,14 +555,13 @@ public IActionResult LoginPartial()
 ```csharp
 public class BlackFilter : IAuthorizationFilter
 {
-    public static List<string> _bannedList = new List<string>()
-        { "bad", "dad" }; //可預先加些資料，測試filter的效果
+    public static List<int> _bannedList = new List<int>()
+        { 1,2 }; //可預先加些資料，測試filter的效果
     public void OnAuthorization(AuthorizationFilterContext context)
     {
-        var name = context.HttpContext.User.Claims
-            .FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
-
-        if (_bannedList.Contains(name))
+        var memberId = int.Parse(context.HttpContext.User.Identity.Name);
+            
+        if (_bannedList.Contains(memberId))
             context.Result = new ForbidResult();
     }
 }
@@ -582,11 +593,10 @@ TokenController中設計API命名為SignOut，讓前端呼叫時能把用戶加�
 ```csharp
 public IActionResult SignOut()
 {
-    var name = User.Claims
-        .FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+    var memberId = int.Parse(User.Identity.Name);
 
-    BlackFilter._bannedList.Add(name);
-    return Ok($"登出了{name}，加進過濾名單");
+    BlackFilter._bannedList.Add(memberId);
+    return Ok($"登出了{memberId}，加進過濾黑名單");
 }
 ```
 
@@ -612,8 +622,12 @@ function signOut() {
 //但因為未攜帶JWT，故無妨
 public IActionResult SignIn(LoginVM request)
 {
-    BlackFilter._bannedList.Remove(request.Username);
-    return Ok(_jwtHelper.GenerateJWT(request.Username));
+    ...
+    var jwt = _jwtHelper.GenerateJWT(member);
+
+    BlackFilter._bannedList.Remove(member.MemberId); //移除黑名單
+
+    return Ok(jwt);
 }
 ```
 
@@ -764,16 +778,17 @@ public IActionResult GetJti(){...}
 ```csharp
 [HttpGet("claims")] 
 //  /api/Token/GetClaims/claims  
-//  controller路由規則/指定路徑
+//  = controller路由規則/指定路徑
+//  = 承接controller路由
 //  註：若搭配Api控制器預設的路由規則 api/[controller]，就比較合理了。
 
 [HttpGet("/sub")]
 //  /sub
-//  網站根目錄/指定路徑
+//  = 網站根目錄/指定路徑
 
 [HttpGet("~/jti")]
 //  /jti
-//  網站根目錄/指定路徑
+//  = 網站根目錄/指定路徑
 ```
 
 
@@ -791,7 +806,7 @@ public IActionResult GetJti(){...}
 參考這篇文章：
 > [使用 Swashbuckle 請求時加入 【JWT】](https://clarklin.gitlab.io/2021/06/13/asp-dotnet-core-api-document-using-jwt/)
 
-基本上照著複製貼上，執行專案，依文章內的教學操作swagger UI。
+基本上照著複製貼上-->執行專案-->依文章內的教學操作swagger UI。
 
 
 ```csharp
@@ -800,7 +815,7 @@ services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { 
         Title = "Swagger首頁標題", 
         Version = "v1" 
-        //還有幾個屬性可以設定
+        //還有幾個屬性可以設定，可再自行查看
     });
     
     // 以下複製貼上
@@ -809,14 +824,17 @@ services.AddSwaggerGen(c =>
     {
         Name = "Authorization",
         In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,.Http, //這裡要修改
+        Type = SecuritySchemeType.ApiKey, //這裡要修改
         Scheme = "Bearer",
         BearerFormat = "JWT",
         Description = "JWT Authorization header using the Bearer scheme."
     });
     c.AddSecurityRequirement(new OpenApiSecurityRequirement()
     {
-        { new OpenApiSecurityScheme(){ }, new List<string>() }
+        { 
+            new OpenApiSecurityScheme(){ }, 
+            new List<string>() 
+        }
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -900,11 +918,10 @@ services.AddSwaggerGen(c =>
 [AllowAnonymous]
 //進此action之前，會先進入BlackFilter
 //但因為未攜帶JWT，故無妨
+// 注意 回傳型別改成了ActionResult<string>
 public ActionResult<string> SignIn(LoginVM request)
 {
-    BlackFilter._bannedList.Remove(request.Username);
-    return _jwtHelper.GenerateJWT(request.Username);
-    // 注意 回傳型別改成了ActionResult<string>，
+    ...
 }
 ```
 
@@ -920,7 +937,3 @@ app.UseSwaggerUI(options =>
     options.InjectStylesheet("/swagger-ui/custom.css");
 });
 ```
-
----
-## (選擇性) Logger機制
-可參考筆者的[Cookie驗證教學Lab](https://github.com/redgrandfa/CookieAuthenticationLab)第7節的內容
