@@ -5,8 +5,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
-using System.Security.Claims;
-using static JwtAuthLab.Helpers.JwtHelper;
 
 namespace JwtAuthLab.ApiControllers
 {
@@ -22,6 +20,12 @@ namespace JwtAuthLab.ApiControllers
             _jwtHelper = jwtHelper;
         }
 
+        //僅為了demo方便，將類別放在此
+        public class LoginVM
+        {
+            public string Username { get; set; }
+            public string Password { get; set; }
+        }
         /// <summary>
         ///     【會出現在API標題】
         /// </summary>
@@ -43,7 +47,7 @@ namespace JwtAuthLab.ApiControllers
         ///                     }
         /// </remarks>
         /// <param name="request">【會出現在參數說明】</param>
-        /// <returns> 回傳說明 </returns>
+        /// <returns>【回傳說明】</returns>
         /// <response code="200">【會在description區，描述此回應類型】</response>
         /// <response code="404">【會在description區，描述此回應類型】</response>            
         [HttpPost]
@@ -63,23 +67,15 @@ namespace JwtAuthLab.ApiControllers
 
             var jwt = _jwtHelper.GenerateJWT(member);
 
-            BlackFilter._bannedList.Remove(member.MemberId); //移除黑名單
+            BlackFilter._bannedList.Remove( member.MemberId.ToString() ); //移除黑名單
 
             return Ok(jwt);
         }
 
-        //僅為了demo方便，將類別放在此
-        public class LoginVM
-        {
-            public string Username { get; set; }
-            public string Password { get; set; }
-        }
-
-
         [HttpGet]
         public IActionResult SignOut()
         {
-            var memberId = int.Parse(User.Identity.Name);
+            var memberId = User.Identity.Name;
 
             BlackFilter._bannedList.Add(memberId);
             return Ok($"登出了{memberId}，加進過濾黑名單");

@@ -40,7 +40,7 @@ function signOut() {
 //登入登出後，都需要刷新UI
 function refreshLoginPartial() {
     //重新載入一次Login的PartialView
-    fetch('Home/LoginPartial')
+    fetch('/Home/LoginPartial')
         .then(response => response.text())
         .then(text => {
             document.querySelector('#login-partial').innerHTML = text

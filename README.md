@@ -4,9 +4,9 @@
 ### 為何使用JWT驗證 
 我有另外一個
 [教cookie驗證的教學Lab](https://github.com/redgrandfa/CookieAuthenticationLab)。
-由於cookie受同源政策影響，所以在前後端分離架構下，不適用cookie驗證；而token驗證可以填補這個需求。
+由於cookie受同源政策影響，所以在前後端分離架構下(跨源)，不適用cookie驗證；而token驗證可以填補這個需求。
 
-token可中譯成**令牌/權杖**，token based驗證的理念，可想像成是：
+token可中譯成**權杖/令牌**，token based驗證的理念，可想像成是：
 1. 皇帝**發行**了令牌
 2. 昭告各關卡/城門守衛，如何**檢驗**令牌真偽
 3. 任何**攜帶**令牌的人，可以通行。
@@ -31,7 +31,7 @@ JSON Web Token(縮寫JWT)，顧名思義和**JSON字串**有關；是現在流�
 ```密(header).密(payload).密(signature)```
 
 
-而其中signature 是`密(header)`、`密(payload)`、`私鑰` 三者混成的，所以比對可判斷header、payload有沒有被竄改過
+而其中`signature` 是`密(header)`、`密(payload)`、`私鑰` 三者混成的，所以比對可判斷header、payload有沒有被竄改過
 
 
 詳細可參考這篇文章
@@ -78,20 +78,19 @@ JSON Web Token(縮寫JWT)，顧名思義和**JSON字串**有關；是現在流�
 
 #### 1-1-1 發行JWT的helper
 
-新增Helpers資料夾，新增一個類別檔JwtHelper.cs，其中宣告GenerateToken方法，先把ClaimIdentity造出來：
+新增Helpers資料夾，新增一個類別檔JwtHelper.cs，其中宣告GenerateJWT方法，先把ClaimIdentity造出來：
 ```csharp
+//模擬DB中的Member資料。僅為了demo方便，將類別放在此
+public class Member
+{
+    public int MemberId { get; set; }
+    public string Username { get; set; }
+}
 public class JwtHelper
 {
-    //模擬DB中的Member資料。僅為了demo方便，將類別放在此
-    public class Member
-    {
-        public int MemberId { get; set; }
-        public string Username { get; set; }
-    }
-
     public string GenerateJWT(Member member)
     {
-        //(一)造ClaimsIdentity
+        #region (一)造ClaimsIdentity
         //實際應到資料庫查此username資料，看該有哪些claim
         //以下此僅demo
         var claims = new List<Claim>();
@@ -124,6 +123,7 @@ public class JwtHelper
 
         // 集合所有聲明描述的身分識別。這些聲明，將記在token的payload中
         var userClaimsIdentity = new ClaimsIdentity(claims);
+        #endregion
     }
 }
 ```
@@ -157,19 +157,20 @@ GenerateJWT方法，做出tokenDescriptor物件後產生JWT：
 ```csharp
 public string GenerateJWT(Member member)
 {
-    //...方才寫到這
     var userClaimsIdentity = new ClaimsIdentity(claims);
+    #endregion
+    //...方才寫到這
 
-    //(二)準備token的descriptor(譯：描述子)
+
+    #region (二)準備token的descriptor(譯：描述子)
     var issuer = configuration.GetValue<string>("JwtSettings:Issuer");
     var signKey = configuration.GetValue<string>("JwtSettings:SignKey"); //私鑰不可外流
 
-    // 對稱式加密後的金鑰，產 JWT 的signature(簽章)要用
+    // 先將 金鑰 以 byte陣列 表示，做成個物件
+    //  HmacSha256加密演算法 => 用來產生 JWT的signature(簽章)
     var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signKey));
-    
-    // 用來產生signature 的密碼編譯演算法
     var signingCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256Signature);
-    // 註：HmacSha256 有要求必須要大於 128 bits，所以才說signKey 至少要 16 字元以上
+    // 註：有要求必須要大於 128 bits，所以signKey 至少要 16 字元以上
 
 
     // 描述token的相關設定的物件
@@ -193,11 +194,13 @@ public string GenerateJWT(Member member)
         //此屬性負責JWT的signature(JWT第三段)
         SigningCredentials = signingCredentials,
     };
+    #endregion
 
-    //(三) 造出JWT回傳
+    #region (三) 造出JWT回傳
     var tokenHandler = new JwtSecurityTokenHandler();
-    var securityToken = tokenHandler.CreateToken(tokenDescriptor);
+    var securityToken = tokenHandler.CreateToken(tokenDescriptor);//若signKey < 16 字元，此行會拋例外
     var serializeToken = tokenHandler.WriteToken(securityToken);
+    #endregion
 
     return serializeToken;
 }
@@ -233,26 +236,26 @@ public class TokenController : ControllerBase
         _jwtHelper = jwtHelper;
     }
     //3
-    [HttpPost]
-    public IActionResult SignIn(LoginVM request)
-    {
-        //先以登入輸入值到DB查到會員，這邊假的demo用
-        Member member = new Member
-        {
-            MemberId = 1,
-            Username = request.Username,
-        };
-
-        var jwt = _jwtHelper.GenerateJWT(member) 
-
-        return Ok( jwt );
-    }
-
     //僅為了demo方便將類別放在此
     public class LoginVM 
     {
         public string Username { get; set; }
         public string Password { get; set; }
+    }
+    [HttpPost]
+    public IActionResult SignIn(LoginVM request)
+    {
+        #region service層
+        //先以登入輸入值到DB查到會員，這邊假的demo用
+        Member memberFound = new Member
+        {
+            MemberId = 1,
+            Username = request.Username,
+        };
+
+        var jwt = _jwtHelper.GenerateJWT(memberFound);
+
+        return Ok( jwt );
     }
 }
 ```
@@ -270,8 +273,8 @@ wwwroot/js 中新增Login.js檔，
 
 Login.js檔中，呼叫'/api/Token/SignIn'這支API，並把取得的JWT存入Cookie：
 ```javascript
-let jwtNameInCookie = "JWT"
-let jwtOptionInCookie = { expires: 14 };
+const jwtNameInCookie = "JWT"
+const jwtOptionInCookie = { expires: 14 };
 //註：cookie的過期時間 應設定為和 jwt的過期時間 相同
 
 signIn();
@@ -289,8 +292,8 @@ function signIn() {
         method: 'POST',
         body: JSON.stringify(data),
     })
-    .then(response => response.text())
-    .then(jwt => {
+    .then( response => response.text() )
+    .then( jwt => {
         Cookies.set(jwtNameInCookie, jwt, jwtOptionInCookie);
     })
 }
@@ -308,9 +311,8 @@ function signIn() {
 ***VERIFY SIGNATURE***區塊中輸入SignKey(appsettings.json中)後，再重貼一次JWT即可驗證Signature
 
 
-
-註：如果想更了解產生JWT的細節，可以中斷點停在GenerateJWT方法return前，觀察**securityToken**這個物件中的屬性，比如：
-
+---
+註：如果想更了解產生JWT的細節：可以中斷點停在GenerateJWT方法return前，觀察**securityToken**這個物件中的屬性，比如：
 - Header、Payload中的資訊，就是jwt.io推算出來的資訊
 - EncodedHeader 、RawHeader 都是Header 編碼後的字串
 - EncodedPayload、RawPayload都是Payload編碼後的字串
@@ -322,7 +324,7 @@ function signIn() {
 - RawData 就是完整的JWT
 
 
-
+---
 ### 1-2 檢驗JWT (昭告如何檢驗令牌真偽)
 #### 1-2-1 設定JWT驗證機制 
 到startup.cs檔
@@ -407,15 +409,14 @@ public class TokenController : ControllerBase
 在Home/Index 中加一顆按鈕 去拜訪api/Token/TestAuth：
 
 ```html
-<div class="text-center">
-    @*做顆按鈕*@
-    <button id="authApi">拜訪需要權限的的API</button>
-</div>
+<h1>首頁</h1>
+@*做顆按鈕*@
+<button id="authApi">拜訪需要權限的的API</button>
 
 @section Scripts{
     <script>
-        document.querySelector('#authApi').onclick = ()=>{
-            fetch('api/Token/TestAuth' , {
+        authApi.onclick = ()=>{
+            fetch('/api/Token/TestAuth' , {
                 headers:{
                     Authorization: `Bearer ${Cookies.get(jwtNameInCookie)}`
                 }
@@ -443,9 +444,10 @@ public class TokenController : ControllerBase
 @inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor;
 @{
     //這兩種方式都無法確認是否登入中
-    //bool a = User.Identity.IsAuthenticated;
-    //bool b = HttpContextAccessor.HttpContext.User.Identity.IsAuthenticated;
+    bool a = User.Identity.IsAuthenticated;
+    bool b = HttpContextAccessor.HttpContext.User.Identity.IsAuthenticated;
 
+    //改用cookie判斷
     bool isAuthenticated = HttpContextAccessor.HttpContext.Request.Cookies.ContainsKey("JWT");
 }
 
@@ -525,6 +527,8 @@ function refreshLoginPartial() {
             document.querySelector('#login-partial').innerHTML = text
         })
 }
+refreshLoginPartial() //因為瀏覽器可能有快取的問題，開場最好再去更新一下(不然就得要手動重新整理)
+
 ```
 而`refreshLoginPartial`方法中fetch拜訪的路徑，須到HomeController中補個action如下：
 ```csharp
@@ -583,7 +587,7 @@ public void ConfigureServices(IServiceCollection services)
 ```
 
 可執行專案測試，確認：
-用bad這個名稱登入，拜訪需權限的api會失敗(回應403)
+MemberId是1或2時，拜訪需權限的api會失敗(回應403)
 
 
 ##### 登出配合Filter
@@ -593,23 +597,23 @@ TokenController中設計API命名為SignOut，讓前端呼叫時能把用戶加�
 ```csharp
 public IActionResult SignOut()
 {
-    var memberId = int.Parse(User.Identity.Name);
+    var memberId = User.Identity.Name;
 
     BlackFilter._bannedList.Add(memberId);
     return Ok($"登出了{memberId}，加進過濾黑名單");
 }
+
 ```
 
 前端： (修改Login.js中的登出方法)
 ```javascript
 //登出方法
-function signOut() {
+function signOut(){
     fetch('/api/Token/SignOut', {
         headers: {
             Authorization: `Bearer ${Cookies.get(jwtNameInCookie)}`
         },
     })
-
     Cookies.remove(jwtNameInCookie, jwtOptionInCookie);
     refreshLoginPartial()
 }
@@ -623,9 +627,9 @@ function signOut() {
 public IActionResult SignIn(LoginVM request)
 {
     ...
-    var jwt = _jwtHelper.GenerateJWT(member);
+    var jwt = _jwtHelper.GenerateJWT(memberFound);
 
-    BlackFilter._bannedList.Remove(member.MemberId); //移除黑名單
+    BlackFilter._bannedList.Remove(memberFound.MemberId); //移除黑名單
 
     return Ok(jwt);
 }
@@ -674,6 +678,11 @@ public IActionResult GetJti()
 ```
 (這三個API待會可配合swagger的路由教學。)
 
+註：上述的Lab是**靠AJAX設定header夾帶JWT做驗證**，
+如果是超連結導到一般的Controller 下的[Authorize]action，該怎麼辦??
+筆者尚未研究，也許超連結可以設定header? 也許改用AJAX發Get請求後跳轉?
+Cookie驗證 和 JWT驗證似乎可以並存，微軟文件第一組語法有點跡象：
+https://docs.microsoft.com/zh-tw/aspnet/core/security/authentication/?view=aspnetcore-5.0
 ---
 ## 2 Swagger
 參考資料：
@@ -695,7 +704,7 @@ public void ConfigureServices(IServiceCollection services){
     {
         c.SwaggerDoc("v1", new OpenApiInfo { 
             Title = "Swagger首頁標題", 
-            Version = "v1" 
+            Version = "v1" ,
             //還有幾個屬性可以設定
         });
     });
@@ -806,9 +815,7 @@ public IActionResult GetJti(){...}
 參考這篇文章：
 > [使用 Swashbuckle 請求時加入 【JWT】](https://clarklin.gitlab.io/2021/06/13/asp-dotnet-core-api-document-using-jwt/)
 
-基本上照著複製貼上-->執行專案-->依文章內的教學操作swagger UI。
-
-
+先照著文章複製貼上
 ```csharp
 services.AddSwaggerGen(c =>
 {
@@ -853,6 +860,7 @@ services.AddSwaggerGen(c =>
     });
 });
 ```
+執行專案-->依文章內的教學操作swagger UI。
 
 
 
@@ -861,6 +869,7 @@ services.AddSwaggerGen(c =>
 
 #### 2-3-1 啟用XML 註解
 如下編輯專案的 .csproj檔
+(如果沒加這句，待會將因為沒產生XML檔，拋出找不到檔案的例外)
 ```xml
 <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
@@ -909,7 +918,7 @@ services.AddSwaggerGen(c =>
 ///                     }
 /// </remarks>
 /// <param name="request">【會出現在參數說明】</param>
-/// <returns> 回傳說明 </returns>
+/// <returns> 【回傳說明】 </returns>
 /// <response code="200">【會在description區，描述此回應類型】</response>
 /// <response code="404">【會在description區，描述此回應類型】</response>            
 [HttpPost]
@@ -930,7 +939,7 @@ public ActionResult<string> SignIn(LoginVM request)
 
 
 #### 2-3-3 自訂CSS
-如果想自訂CSS，處理swagger的UI，如下注入CSS檔：
+如果想自訂CSS，處理swagger的UI，如下注入CSS檔(檔案路徑必須有效)：
 ```csharp
 app.UseSwaggerUI(options =>
 {

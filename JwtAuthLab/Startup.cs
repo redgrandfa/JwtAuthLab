@@ -90,8 +90,7 @@ namespace JwtAuthLab
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
                 c.IncludeXmlComments(xmlPath);
 
-
-                // 以下複製貼上
+                #region 這段複製貼上
                 // swagger 加入 jwt 支援
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
                 {
@@ -125,8 +124,14 @@ namespace JwtAuthLab
                         new string[] {}
                     }
                 });
-
+                #endregion
             });
+
+            //services.AddAuthorization(opt =>
+            //{
+            //    opt.DefaultPolicy 
+            //    opt.AddPolicy("", policy => { });
+            //});
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -162,7 +167,8 @@ namespace JwtAuthLab
             {
                 endpoints.MapControllerRoute(
                     name: "default",
-                    pattern: "{controller=Home}/{action=Index}/{id?}");
+                    pattern: "{controller=Home}/{action=Index}/{id?}"
+                );//.RequireAuthorization();
             });
         }
     }

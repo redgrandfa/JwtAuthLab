@@ -1,4 +1,5 @@
 ﻿using JwtAuthLab.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
@@ -12,7 +13,6 @@ namespace JwtAuthLab.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
-
         public HomeController(ILogger<HomeController> logger)
         {
             _logger = logger;
@@ -20,7 +20,6 @@ namespace JwtAuthLab.Controllers
 
         public IActionResult Index()
         {
-            //HttpContext.Request.s
             return View();
         }
 
