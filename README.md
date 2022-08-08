@@ -565,7 +565,7 @@ public IActionResult LoginPartial()
 ```csharp
 public class BlackFilter : IAuthorizationFilter
 {
-    public static List<string> _bannedList = new List<int>()
+    public static List<string> _bannedList = new List<string>()
         { "1","2" }; //可預先加些資料，測試filter的效果
     public void OnAuthorization(AuthorizationFilterContext context)
     {
