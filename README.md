@@ -947,8 +947,8 @@ public ActionResult<string> SignIn(LoginVM request)
 #### 2-3-3 自訂CSS
 如果想自訂CSS，處理swagger的UI，如下注入CSS檔(檔案路徑必須有效)：
 ```csharp
-app.UseSwaggerUI(options =>
+app.UseSwaggerUI(c =>
 {
-    options.InjectStylesheet("/swagger-ui/custom.css");
+    c.InjectStylesheet("/swagger-ui/custom.css");
 });
 ```

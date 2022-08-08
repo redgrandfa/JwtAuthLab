@@ -147,6 +147,7 @@ namespace JwtAuthLab
                 app.UseSwaggerUI(c => {
                     c.SwaggerEndpoint("/swagger/v1/swagger.json", "©w¸q¦WºÙ v1");
                     c.RoutePrefix = string.Empty;
+                    //c.InjectStylesheet("/swagger-ui/custom.css");
                 });
             }
             else
