@@ -548,7 +548,7 @@ public IActionResult LoginPartial()
 執行專案測試，此時應能和登入登出按鈕互動，UI根據cookie裡存的JWT改變。
 
 #### 1-4-4 (選擇性) 強化資安-黑名單Filter 
-> 參考[](https://docs.microsoft.com/en-us/aspnet/core/mvc/controllers/filters?view=aspnetcore-5.0)
+> 參考[微軟Filter文件](https://docs.microsoft.com/en-us/aspnet/core/mvc/controllers/filters?view=aspnetcore-5.0)
 - 若有駭客取得某用戶某個JWT字串...
 
     即使用戶登出刪除了cookie裡的JWT，但JWT字串本身其實沒有失效，因為效期就寫在JWT字串身上!!(Payload裡記載的Expires、NotBefore)
@@ -925,8 +925,8 @@ services.AddSwaggerGen(c =>
 /// </remarks>
 /// <param name="request">【會出現在參數說明】</param>
 /// <returns> 【回傳說明】 </returns>
-/// <response code="200">【會在description區，描述此回應類型】</response>
-/// <response code="404">【會在description區，描述此回應類型】</response>            
+/// <response code="200">【會在Description區，描述此回應類型】</response>
+/// <response code="404">【會在Description區，描述此回應類型】</response>            
 [HttpPost]
 [ProducesResponseType(StatusCodes.Status200OK)]
 [ProducesResponseType(StatusCodes.Status404NotFound)]
