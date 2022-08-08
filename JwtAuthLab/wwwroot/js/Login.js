@@ -3,6 +3,8 @@ let jwtOptionInCookie = { expires: 14 };
 //註：cookie的過期時間 應設定為和 jwt的過期時間 相同
 
 //signIn();
+refreshLoginPartial() //因為瀏覽器可能有快取的問題，開場最好再去更新一下(不然就得要手動重新整理)
+
 function signIn() {
     if (Cookies.get(jwtNameInCookie) != undefined) return
 

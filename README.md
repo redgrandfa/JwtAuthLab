@@ -495,6 +495,8 @@ wwwroot/js/Login.js中，調整成以下程式碼
 
 ```javascript
 //signIn();
+refreshLoginPartial() //因為瀏覽器可能有快取的問題，開場最好再去更新一下(不然就得要手動重新整理)
+
 function signIn() {
     // ...略
     let data = {
@@ -527,7 +529,6 @@ function refreshLoginPartial() {
             document.querySelector('#login-partial').innerHTML = text
         })
 }
-refreshLoginPartial() //因為瀏覽器可能有快取的問題，開場最好再去更新一下(不然就得要手動重新整理)
 
 ```
 而`refreshLoginPartial`方法中fetch拜訪的路徑，須到HomeController中補個action如下：
