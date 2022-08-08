@@ -565,11 +565,11 @@ public IActionResult LoginPartial()
 ```csharp
 public class BlackFilter : IAuthorizationFilter
 {
-    public static List<int> _bannedList = new List<int>()
-        { 1,2 }; //可預先加些資料，測試filter的效果
+    public static List<string> _bannedList = new List<int>()
+        { "1","2" }; //可預先加些資料，測試filter的效果
     public void OnAuthorization(AuthorizationFilterContext context)
     {
-        var memberId = int.Parse(context.HttpContext.User.Identity.Name);
+        var memberId = context.HttpContext.User.Identity.Name;
             
         if (_bannedList.Contains(memberId))
             context.Result = new ForbidResult();
@@ -635,7 +635,7 @@ public IActionResult SignIn(LoginVM request)
     ...
     var jwt = _jwtHelper.GenerateJWT(memberFound);
 
-    BlackFilter._bannedList.Remove(memberFound.MemberId); //移除黑名單
+    BlackFilter._bannedList.Remove(memberFound.MemberId.ToString()); //移除黑名單
 
     return Ok(jwt);
 }
