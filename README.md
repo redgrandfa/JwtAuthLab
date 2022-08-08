@@ -198,8 +198,13 @@ public string GenerateJWT(Member member)
 
     #region (三) 造出JWT回傳
     var tokenHandler = new JwtSecurityTokenHandler();
-    var securityToken = tokenHandler.CreateToken(tokenDescriptor);//若signKey < 16 字元，此行會拋例外
+
+    //若signKey < 16 字元，這句會拋例外
+    var securityToken = tokenHandler.CreateToken(tokenDescriptor);
+    //可加中斷點觀察：header、payload => 加密後的兩者  + RawSignature => RawData  用.隔開
+
     var serializeToken = tokenHandler.WriteToken(securityToken);
+    //可加中斷點觀察：此字串值會是 RawData
     #endregion
 
     return serializeToken;
